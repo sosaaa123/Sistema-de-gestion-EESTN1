@@ -21,7 +21,7 @@ class Element(BaseModel):
 #Me sirve para identificar mas rapido las cosas, se diferencia de StockItem q solo tiene su id heredado de elemento,
 #y no puede llegar a tener ningun id mas
 class UniqueItem(Element):
-    codigo_interno: str
+    codigo_interno: Optional[str] = None
     pass
 
 #El isReusable es para las cosas que son reusables (es bool) o no

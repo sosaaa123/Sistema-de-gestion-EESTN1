@@ -1,29 +1,19 @@
-from fastapi import FastAPI
-from Servicio.biblioService import BiblioService
+from fastapi import FastAPI, HTTPException
+from Controller.controller import Controller
 from Modelos.biblioteca import Libro
+from Servicio.servicio import Servicio
 
-class BiblioController:
-    def __init__(self, servicio: BiblioService):
-        self.servicio = servicio
-
+class BiblioController(Controller):
+    def __init__(self, servicio: Servicio, prefix):
+        super().__init__(servicio, prefix)
+    
     def rutas(self, app: FastAPI):
+        super().rutas(app)
 
-        @app.get("/")
-        def corriendose():
-            return {"Mensaje": "Corriendose"}
-
-        @app.get("/biblioteca/verlibros")
-        def ver_libros():
-            return self.servicio.verLibros()
-        
-        @app.get("/biblioteca/buscarelemento/{element_id}")
-        def buscar_libro(element_id: int):
-            elemento = self.servicio.buscarObjeto(element_id)
-
-            return elemento
-        
-        @app.post("/biblioteca/crearlibro")
-        def crear_libro(libro: Libro):
-            self.servicio.crearLibro(libro)
-        return {"mensaje": "creado"}
-            
+        @app.get(f"{self.prefix}/libros")
+        def libros():
+            try:
+                res = self.servicio.verLibros()
+                return res
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error al cargar libros: {str(e)}")

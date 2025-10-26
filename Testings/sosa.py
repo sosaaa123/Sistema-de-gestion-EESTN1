@@ -36,13 +36,12 @@ import os
 # (id: 3) Electromecanica
 # (id: 4) Programacion
 
+
 load_dotenv()
 var= os.getenv("DATABASE_URL")
 conexion=Conexion(var)
 algoritmo = os.getenv("ALGORITHM")
 secret_key = os.getenv("JWT_SECRET_KEY")
-
-
 
 repositorio = Repositorio("programacion", conexion)
 rep_usuarios = UserRepo("usuarios", conexion)
@@ -52,35 +51,21 @@ tm = TokenManager(algoritmo, secret_key)
 
 
 serviceUser = Userservice(conexion, rep_usuarios, pm, tm)
-toto = Alumno(nombre="Marcos", apellido="Rodriguez", curso="7mo 3ra", especialidad="electromecanica")
 
+biblio_rep = BiblioRepo("biblioteca", conexion)
 profesor = Profesor(nombre="Maria", apellido="Walsh")
 servicio = Servicio(repositorio, rep_usuarios)
 
-#Que cuando se devuelva se vuelva a sumar el disponibles
-print(servicio.devolver(2))
+biblioteca_servicio = BiblioService(biblio_rep, rep_usuarios)
 
-
-
-#print(serviceUser.crearJerarquia(8, "marquitos", "Pasante", "marquitos@gmail.com", accesos))
-#print(serviceUser.actJerarquia(8, "Administrador", accesos))
-#print(serviceUser.bajaPersonal(8))
-
-"""monitor = StockItem(nombre="Monitor MMR", 
-                    descripcion="Monitor MMR", 
-                    estado="Disponible", 
-                    ubicacion="Programacion", 
-                    ubicacion_interna="Stand-10",
-                    tipo="Stockitem", 
-                    cantidad=5, 
-                    disponibles=5,
-                    isReusable=True)"""
 
 app = FastAPI()
-#controller = BiblioController(servicio)
-#controller.rutas(app)
+controllerPrg = BiblioController(servicio, "/programacion")
+controllerPrg.rutas(app)
 
-controller = Controller(servicio, "/programacion")
-controller.rutas(app)
+controllerBiblio = Controller(servicio, "/biblioteca")
+controllerBiblio.rutas(app)
 
+controllerUsers = Controller(serviceUser, "/usuarios")
+controllerUsers.rutas(app)
 

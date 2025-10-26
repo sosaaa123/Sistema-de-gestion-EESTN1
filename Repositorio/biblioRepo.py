@@ -45,7 +45,7 @@ class BiblioRepo(Repositorio):
         SELECT i.element_id, i.nombre, i.descripcion, i.estado, i.ubicacion, i.ubicacion_interna, i.tipo,
         l.codigo_interno, l.ISBN, l.autor, l.editorial, l.categoria, l.publicacion_year, l.impresion_year, l.pais
         FROM {self.esquema}.libros l
-        JOIN inventario i ON l.inventario_id = i.element_id     s     
+        JOIN {self.esquema}.inventario i ON l.inventario_id = i.element_id 
         """)
 
         registros = self.cur.fetchall() 
@@ -59,8 +59,8 @@ class BiblioRepo(Repositorio):
                     estado=registro[3], 
                     ubicacion=registro[4], 
                     ubicacion_interna=registro[5], 
-                    codigo_interno=registro[6], 
-                    tipo=registro[7],
+                    tipo=registro[6],
+                    codigo_interno=registro[7],
                     ISBN=registro[8],
                     autor=registro[9], 
                     editorial=registro[10],
@@ -107,33 +107,36 @@ class BiblioRepo(Repositorio):
         try:
 
             elemento = super().buscarElemento(id_element)
-            self.cur.execute(f"""
-            SELECT isbn, autor, editorial, categoria, publicacion_year, impresion_year, pais 
-            FROM {self.esquema}.libros
-            WHERE inventario_id =(%s)
-            """,(id_element,))
+            if isinstance(elemento, UniqueItem):
+                self.cur.execute(f"""
+                SELECT isbn, autor, editorial, categoria, publicacion_year, impresion_year, pais 
+                FROM {self.esquema}.libros
+                WHERE inventario_id =(%s)
+                """,(id_element,))
 
-            res = self.cur.fetchone()
+                res = self.cur.fetchone()
 
-            if(res):
-                nlibro = Libro(
-                    id_element=id_element, 
-                        nombre=elemento.nombre, 
-                        descripcion=elemento.descripcion, 
-                        estado=elemento.estado, 
-                        ubicacion=elemento.ubicacion, 
-                        ubicacion_interna=elemento.ubicacion_interna, 
-                        codigo_interno=elemento.codigo_interno,
-                        tipo=elemento.tipo,
-                        ISBN=res[0],
-                        autor=res[1], 
-                        editorial=res[2],
-                        categoria=res[3], 
-                        publicacion_year=res[4], 
-                        impresion_year=res[5], 
-                        pais=res[6] 
-                )
-                return nlibro
+                if(res):
+                    nlibro = Libro(
+                        id_element=id_element, 
+                            nombre=elemento.nombre, 
+                            descripcion=elemento.descripcion, 
+                            estado=elemento.estado, 
+                            ubicacion=elemento.ubicacion, 
+                            ubicacion_interna=elemento.ubicacion_interna, 
+                            codigo_interno=elemento.codigo_interno,
+                            tipo=elemento.tipo,
+                            ISBN=res[0],
+                            autor=res[1], 
+                            editorial=res[2],
+                            categoria=res[3], 
+                            publicacion_year=res[4], 
+                            impresion_year=res[5], 
+                            pais=res[6] 
+                    )
+                    return nlibro
+                else:
+                    return elemento
             else:
                 return elemento
         except Exception as e:
@@ -150,8 +153,7 @@ class BiblioRepo(Repositorio):
         camposLibro = ["isbn", "autor", "editorial", "categoria", "publicacion_year", "impresion_year", "pais"]
         try:
             elemento = self.buscarElemento(id_element)
-
-            
+           
             if isinstance(elemento, Libro) and campo.lower() in camposLibro:
                 self.cur.execute(f"""
                     UPDATE {self.esquema}.libros

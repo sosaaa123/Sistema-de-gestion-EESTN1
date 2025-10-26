@@ -73,6 +73,14 @@ class Controller:
                 return res
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al prestar elemento: {str(e)}")
+            
+        @app.post(f"{self.prefix}/devolver/{{registro_id}}")
+        def devolver(registro_id):
+            try:
+                res = self.servicio.devolver(registro_id)
+                return res
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error al prestar elemento: {str(e)}")
         
         @app.get(f"{self.prefix}/registros")
         def verRegistros():

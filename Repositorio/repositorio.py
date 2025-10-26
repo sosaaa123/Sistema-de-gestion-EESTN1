@@ -49,11 +49,16 @@ class Repositorio:
                 """, (element_id, cantidad, disponibles, isReusable))
 
             else:  #UniqueItem
-                codigo_interno = elemento.codigo_interno
-                self.cur.execute(f"""
-                INSERT INTO {self.esquema}.uniqueitems(inventario_id, codigo_interno)
-                VALUES (%s, %s)
-                """, (element_id, codigo_interno))
+                if(elemento.codigo_interno):
+                    self.cur.execute(f"""
+                    INSERT INTO {self.esquema}.uniqueitems(inventario_id, codigo_interno)
+                    VALUES (%s, %s)
+                    """, (element_id, elemento.codigo_interno))
+                else:
+                    self.cur.execute(f"""
+                    INSERT INTO {self.esquema}.uniqueitems(inventario_id)
+                    VALUES(%s)
+                    """,(element_id,))
 
             self.conexion.commit()
             return element_id
@@ -89,7 +94,7 @@ class Repositorio:
             tipo = res[6]
 
             
-            if(tipo =="Uniqueitem"):
+            if(tipo =="Uniqueitem" or tipo == "UniqueItem"):
                 nUniqueitem= UniqueItem(
                 id_element=element_id,
                 nombre=nombre,
@@ -98,13 +103,13 @@ class Repositorio:
                 ubicacion=ubicacion,
                 ubicacion_interna=ubicacion_interna,
                 tipo=tipo,
-                codigo_interno="xd",
+                codigo_interno=res[11],
 
                 )
                
                 return nUniqueitem
             
-            elif(tipo=="Stockitem"):
+            elif(tipo=="Stockitem" or tipo =="StockItem"):
                 nStockitem = StockItem(
                 id_element=element_id,
                 nombre=nombre,
@@ -120,16 +125,15 @@ class Repositorio:
                 
                 return nStockitem
             
-            self.conexion.commit()
         except Exception as e:
                 self.conexion.rollback()
                 raise e
         
     #Para borrar registros, elementos, etc (lo manejo bien en service)
-    def borrar(self, id, tabla):
+    def borrar(self, id):
         try:
             if(self.buscarElemento(id)):
-                self.cur.execute(f"DELETE FROM {self.esquema}.{tabla} WHERE element_id = (%s)", (id,))
+                self.cur.execute(f"DELETE FROM {self.esquema}.inventario WHERE element_id = (%s)", (id,))
                 self.conexion.commit()
                 return True
             else:
@@ -170,7 +174,7 @@ class Repositorio:
     #Funcion para actualizar cantidad y disponibles
     #Si el se trata de un objeto que no es reusable se descuenta la cantidad
     #Si se trata de un ojeto reusable solo se descuentan los disponibles
-
+    #Me dejo esta fucncion solo para restar las cantidades(revisar metodo devolver), sino me voy a hacer un embole en el servicio
     def actDisponibles(self, id_element, pCantidad):
         try:
             self.cur.execute(f"""
@@ -196,10 +200,12 @@ class Repositorio:
                     WHERE inventario_id = (%s)
                     """, (disponibles, id_element))
                     
-                    if(disponibles == 0):
+                    if((disponibles - pCantidad) == 0):
                         self.actEstado(id_element, "No disponible")
+                else:
+                    return False
             else:
-                if(disponibles + pCantidad  >= 0):
+                if((disponibles - pCantidad)  >= 0):
                     disponibles = disponibles - pCantidad
                     nCantidad = cantidad - pCantidad
 
@@ -217,6 +223,39 @@ class Repositorio:
 
                     if(disponibles == 0):
                         self.actEstado(id_element, "No disponible")
+
+            self.conexion.commit()
+        except Exception as e:
+            self.conexion.rollback()
+            raise e
+    #Casi lo mismo q el anterior pero aca solo aplica "sumar" y lo uso en la func devolver
+    def actDsp(self, id_element, cantidad_devuelta):
+        try:
+            self.cur.execute( f"""
+            UPDATE {self.esquema}.stockitems
+            SET disponibles = (%s)
+            WHERE inventario_id = (%s)
+            """, (cantidad_devuelta, id_element))
+
+            self.conexion.commit()
+        except Exception as e:
+            self.conexion.rollback()
+            raise e
+        
+    #Me tiene q llegar un int de cuantos nuevos se cargan
+    def cargarNuevosElementos(self, cantidad, id_element):
+        try:
+            self.cur.execute(f"""
+            UPDATE {self.esquema}.stockitems
+            SET disponibles = disponibles + (%s)
+            WHERE inventario_id = (%s)
+            """, (cantidad, id_element))
+
+            self.cur.execute(f"""
+            UPDATE {self.esquema}.stockitems
+            SET cantidad = cantidad + (%s)
+            WHERE inventario_id = (%s)
+            """, (cantidad, id_element))
 
             self.conexion.commit()
         except Exception as e:
@@ -328,7 +367,6 @@ class Repositorio:
     def devolver(self, registro_id):
         #Terminado? Devuelto? no se me ocurre nada mas entendible
         try:
-
             self.cur.execute(f"""
             UPDATE {self.esquema}.registros
             SET estado = (%s)
@@ -339,6 +377,30 @@ class Repositorio:
             self.conexion.close()
         except Exception as e:
             self.conexion.rollback()
+            raise e
+
+    def buscarRegistro(self, registro_id):
+        try:
+            self.cur.execute(f"""
+            SELECT registro_id, usuario_id, element_id, cantidad, fecha, hora, expiracion, estado, destino
+            FROM {self.esquema}.registros
+            WHERE registro_id = (%s)
+            """, (registro_id,))
+            res = self.cur.fetchone()
+            registro=Registro(
+                registro_id=res[0],
+                element_id=res[2],
+                cantidad=res[3],
+                destino=res[8],
+                usuario_id=res[1],
+                fecha=res[4],
+                hora=res[5],
+                expiracion=res[6],
+                estado=res[7])
+            return registro
+        except Exception as e:
+            raise e
+
 
     #Funcion para retornar los pedidos en curso(o sin devolver)
     def enCurso(self):
@@ -379,7 +441,7 @@ class Repositorio:
                         """, (nvalor, id_element))
 
                     else:
-                        raise ValueError(f"Campo '{campo}' no valido para el elemento")
+                        raise ValueError(f"Campo {campo} no valido para el elemento")
 
                     self.conexion.commit()
                 else:

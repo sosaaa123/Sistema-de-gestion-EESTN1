@@ -36,8 +36,20 @@ class Servicio:
             if( inicio < hora < fin):
                 return datetime.combine(fecha, fin)
             
-    
-    def prestar(self, usuario: User, registro_base: RegistroBase):
+    #Yo  recibiria de la api, en un json el id del element que se quiere prestar
+    #Para solicitar una prestacion se necesiten las siguientes cosas:
+    #El id_element del elemento que se quiere prestar, un objeto Usuario con o sin id dependiendo de si es la primera vez que pide
+    #Un objeto registro.
+    #Toda la estructura de objetos viene desde el frontened como json y 
+    #luego en los Controller se transforman en los respectivos objetos usando pydantic
+
+    #aca se pasa algo como ahora = datetime.now()
+    #Esta funcion retorna lo q va en expiracion que puede ser 11:40, 17:20,21:30
+    #Es decir el tiempo limite q se tiene para entregar
+                   
+    #yo debo de recibir del frontened, un usuario(alumno, profesor, etc) y un registro base
+    #si el usuario viene sin id es pq no esta en la bd (hacer funcion para eso), entonces lo creo
+    def prestar(self, usuario: User, registro_base: RegistroBase, expiracion=None):
         try:
             #esto me tiene que devolver Disponible, No disponible
             estado = self.repositorio.buscarEstado(registro_base.element_id)
@@ -57,10 +69,11 @@ class Servicio:
             ahora = datetime.now()
             fecha = ahora.date()
             hora = ahora.time()
-            
-            expiracion = self.calcularExpiracion(ahora)
+
             if expiracion is None:
-                return (self.res(False, "No se puede realizar pedido, fuera de horario", None))
+                expiracion = self.calcularExpiracion(ahora)
+                if expiracion is None:
+                    return (self.res(False, "No se puede realizar pedido, fuera de horario", None))
             #si es un stock y es reusable el estado es En curso
             #pero si es un elemento q no es reusable(osea q es descartable), nunca voy a tener q esperar a que se devuelva
             #directamente lo marco como consumido
@@ -102,8 +115,14 @@ class Servicio:
     #- sera importante ver la hora de devolucion? 
     def devolver(self, registro_id):
         try:
+            registro = self.repositorio.buscarRegistro(registro_id)
+            if (registro.estado=="Terminado"):
+                return self.res(False, f"Este registro ya habia terminado", None)
+            elemento = self.repositorio.buscarElemento(registro.element_id)
+            if isinstance(elemento, StockItem):
+                self.repositorio.actDsp(registro.cantidad)
+            self.repositorio.actEstado(elemento.id_element,"Disponible")
             self.repositorio.devolver(registro_id)
-            
             return self.res(True, f"Se devolvio un elemento", None)
         except Exception as e:
             return self.res(False, f"Error al devolver elemento: {str(e)}", None)
@@ -122,21 +141,29 @@ class Servicio:
         except Exception as e:
             return self.res(False, f"Error al buscar el elemento: {str(e)}", None)
 
-    def borrar(self, id_element, tabla):
+    def borrar(self, id_element):
         try:
-            if(self.repositorio.borrar(id_element, tabla)):
-                return self.res(True, f"{id_element} borrado exitosamente de la tabla {tabla}", None)
+            if(self.repositorio.borrar(id_element)):
+                return self.res(True, f"{id_element} borrado exitosamente", None)
             else:
-                return self.res(False, f"{id_element} no encontrado en la  tabla {tabla}", None)
+                return self.res(False, f"{id_element} no encontrado", None)
         except Exception as e:
             return self.res(False, f"Error al eliminar el elemento: {str(e)}", None)
     
-    def actDisponibles(self, id_element, pCantidad):
+    def cargarNuevosElementos(self, id_element, pCantidad):
         try:
-            self.repositorio.actDisponibles(id_element, pCantidad)
+            self.repositorio.cargarNuevosElementos(pCantidad, id_element)
+            self.repositorio.actEstado("Disponible")
             return self.res(True, f"Se ha actualizado la cantidad del objeto  con id {id_element}", None)
         except Exception as e:
             return self.res(False, f"Error al actualizar cantidad: {str(e)}", None)
+        
+    def actElemento(self, id_element, campo, nvalor):
+        try:
+            self.repositorio.actElemento(id_element, campo, nvalor)
+            return self.res(True, f"Elemento con id {id_element} actualizado", None)
+        except Exception as e:
+            return False
 
     def verInventarioAll(self):
         res = self.repositorio.verInventarioAll()
@@ -145,5 +172,7 @@ class Servicio:
     def verRegistros(self):
         res = self.repositorio.verRegistros()
         return res
+    
+    
     
     

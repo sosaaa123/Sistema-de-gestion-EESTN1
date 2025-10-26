@@ -55,5 +55,5 @@ class TokenManager:
             return {"success": False, "message":"Token expirado"}
         
         except jwt.InvalidTokenError:
-            return {"succes": False, "message": "Token invalido"}
+            return {"success": False, "message": "Token invalido"}
     
