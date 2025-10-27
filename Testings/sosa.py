@@ -1,4 +1,5 @@
 from Conexiones.conexion import Conexion
+from Controller.userController import userController
 from Repositorio.userRepo import UserRepo
 from Repositorio.biblioRepo import BiblioRepo
 from Repositorio.repositorio import Repositorio
@@ -10,6 +11,7 @@ from Controller.biblioController import BiblioController
 from Controller.controller import Controller
 from Servicio.pwdManager import PasswordManager
 from Servicio.tokenManager import TokenManager
+from fastapi.middleware.cors import CORSMiddleware
 #30/9 ver funciones insert into(prevenir inyecciones sql)
 
 #Cambie todas las tablas a:
@@ -43,7 +45,7 @@ conexion=Conexion(var)
 algoritmo = os.getenv("ALGORITHM")
 secret_key = os.getenv("JWT_SECRET_KEY")
 
-repositorio = Repositorio("programacion", conexion)
+repositorioPrg = Repositorio("programacion", conexion)
 rep_usuarios = UserRepo("usuarios", conexion)
 
 pm = PasswordManager()
@@ -52,20 +54,37 @@ tm = TokenManager(algoritmo, secret_key)
 
 serviceUser = Userservice(conexion, rep_usuarios, pm, tm)
 
+
+#15
+#password: panconqueso12
+#email: lautasosita0999@gmail.com
+#print(serviceUser.crearJerarquia(15, "panconqueso12", "administrador","lautasosita0999@gmail.com" ,["programacion"]))
+
 biblio_rep = BiblioRepo("biblioteca", conexion)
-profesor = Profesor(nombre="Maria", apellido="Walsh")
-servicio = Servicio(repositorio, rep_usuarios)
+
+servicioPrg = Servicio(repositorioPrg, rep_usuarios)
 
 biblioteca_servicio = BiblioService(biblio_rep, rep_usuarios)
 
 
+
+
 app = FastAPI()
-controllerPrg = BiblioController(servicio, "/programacion")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["http://localhost:5173"],
+    allow_methods = ["*"],
+    allow_credentials = True, 
+    allow_headers = ["*"],
+)
+
+controllerPrg = BiblioController(servicioPrg, "/programacion")
 controllerPrg.rutas(app)
 
-controllerBiblio = Controller(servicio, "/biblioteca")
+controllerBiblio = Controller(biblioteca_servicio, "/biblioteca")
 controllerBiblio.rutas(app)
 
-controllerUsers = Controller(serviceUser, "/usuarios")
+controllerUsers = userController(serviceUser, "/usuarios")
 controllerUsers.rutas(app)
 

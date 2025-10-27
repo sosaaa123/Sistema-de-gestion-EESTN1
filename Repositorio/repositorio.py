@@ -276,9 +276,10 @@ class Repositorio:
         for i in res:
             if(i[6] == "Uniqueitem"):
                 self.cur.execute(f"""
-                SELECT codigo_interno, inventario_id
-                FROM {self.esquema}.uniqueitems;                      
-                """)
+                SELECT codigo_interno
+                FROM {self.esquema}.uniqueitems
+                WHERE inventario_id = (%s);                      
+                """,(i[0],))
 
                 r = self.cur.fetchone()
                 n = UniqueItem(id_element=i[0],
@@ -288,7 +289,7 @@ class Repositorio:
                                ubicacion=i[4],
                                ubicacion_interna=i[5],
                                tipo=i[6],
-                               codigo_interno=r[1])
+                               codigo_interno=r[0])
             elif(i[6] == "Stockitem"):
                 self.cur.execute(f"""
                 SELECT cantidad, disponibles, isreusable

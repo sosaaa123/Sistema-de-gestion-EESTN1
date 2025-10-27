@@ -1,6 +1,7 @@
 from typing import List
 from Servicio.userService import Userservice
 from fastapi import FastAPI, HTTPException
+from Servicio.pwdManager import LoginRequest
 class userController:
     def __init__(self, servicio: Userservice, prefix):
         self.servicio = servicio
@@ -16,12 +17,12 @@ class userController:
         @app.get(f"{self.prefix}/users")
         def verUsuarios():
             try:
-                res = self.servicio.verAlumnos()
+                res = self.servicio.verUsuarios()
                 return res
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al cargar usuarios: {str(e)}")
             
-        @app.get(f"{self.prexix}/personal")
+        @app.get(f"{self.prefix}/personal")
         def verPersonal():
             try:
                 res = self.servicio.verPersonal()
@@ -37,7 +38,7 @@ class userController:
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al crear el personal: {str(e)}")
             
-        @app.update(f"{self.prefix}/personal/acjerarquia")
+        @app.put(f"{self.prefix}/personal/acjerarquia")
         def actJerarquia(id_user, jerarquia, accesos: List[str]):
             try:
                 res =  self.servicio.actJerarquia(id_user, jerarquia, accesos)
@@ -54,9 +55,9 @@ class userController:
                 raise HTTPException(status_code=500, detail=f"Error al eliminar personal: {str(e)}")
             
         @app.post(f"{self.prefix}/login")
-        def login(email, password):
+        def login(data: LoginRequest):
             try:
-                res = self.servicio.login(email, password)
+                res = self.servicio.login(data.email, data.password)
                 return res   
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al logearse: {str(e)}")

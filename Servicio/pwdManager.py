@@ -1,4 +1,5 @@
 import bcrypt
+from pydantic import BaseModel
 
 class PasswordManager:
     def __init__(self):
@@ -11,4 +12,6 @@ class PasswordManager:
     def verify_pwd(self, password, hashed):
         return bcrypt.checkpw(password.encode(), hashed.encode())
 
-    
+class LoginRequest(BaseModel):
+    email: str
+    password: str

@@ -112,10 +112,12 @@ class Userservice:
             self.conexion.rollback()
             return (self.res(False, f"Error al eliminar usuario error: {str(e)}", None))
         
-    def verAlumnos(self):
+    def verUsuarios(self):
         try:
-            res = self.repo.verAlumnos()
-            return (self.res(True, f" ", res))
+            alumnos = self.repo.verAlumnos()
+            profesores = self.repo.verProfesores()
+            usuarios = alumnos + profesores
+            return (self.res(True, f" ", usuarios))
         except Exception as e:
             return (self.res(False, f"Error al cargar alumnos: {str(e)}", None))
         
