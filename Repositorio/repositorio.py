@@ -360,7 +360,6 @@ class Repositorio:
 
             
             registros.append(n)
-            self.conexion.close()
         return registros
     
 

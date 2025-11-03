@@ -168,7 +168,6 @@ class UserRepo:
         try:
             self.cur.execute(f"DELETE FROM {self.esquema}.usuarios WHERE id = (%s)", (id_usuario,))
             self.conexion.commit()
-            self.conexion.close()
         except Exception as e:
             self.conexion.rollback()
             raise e
