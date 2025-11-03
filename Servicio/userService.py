@@ -75,7 +75,7 @@ class Userservice:
             return (self.res(False, f"Error al crear usuario error: {str(e)}", None))
 
     def actJerarquia(self, id_user, jerarquia, accesos: List[str]):
-        jerarquias = ["Directivo", "Pasante", "Administrador", "Bibliotecario"]
+        jerarquias = ["Directivo", "Pasante", "Administrador"]
         try:
             if(self.repo.esPersonal):
                 self.repo.actJerarquia(id_user, jerarquia)

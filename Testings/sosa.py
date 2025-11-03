@@ -66,7 +66,14 @@ servicioPrg = Servicio(repositorioPrg, rep_usuarios)
 
 biblioteca_servicio = BiblioService(biblio_rep, rep_usuarios)
 
+zonas = ["programacion", "biblioteca", "electromecanica", "laboratorio"]
 
+tomi = Personal(nombre="Tomas", 
+                apellido="Sanchez", 
+                rol="Directivo", 
+                password="123456789", 
+                email="tomi@gmail.com", 
+                zonas_acceso=zonas)
 
 
 app = FastAPI()
