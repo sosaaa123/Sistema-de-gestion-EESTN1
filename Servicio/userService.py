@@ -119,7 +119,7 @@ class Userservice:
             usuarios = alumnos + profesores
             return (self.res(True, f" ", usuarios))
         except Exception as e:
-            return (self.res(False, f"Error al cargar alumnos: {str(e)}", None))
+            return (self.res(False, f"Error al cargar usuarios: {str(e)}", None))
         
     def verProfesores(self):
         try:
@@ -135,14 +135,7 @@ class Userservice:
         except Exception as e:
             return (self.res(False, f"Error al cargar personal: {str(e)}", None))
         
-    def verUsuarios(self):
-        try:
-            res = self.repo.verAlumnos()
-            res1 = self.repo.verProfesores()
-            res.extend(res1)
-            return(self.res(True, f"Usuarios", res ))
-        except Exception as e:
-            return (self.res(False, f"Error al cargar personal: {str(e)}", None))
+   
     
     
     

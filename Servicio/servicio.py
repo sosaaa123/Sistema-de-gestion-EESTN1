@@ -27,8 +27,8 @@ class Servicio:
         hora = ahora.time()
         fecha = ahora.date()
         turnos = [
-            (time(7,40), time(11,40)),
-            (time(13,10), time(17,20)),
+            (time(7,40), time(11,50)),
+            (time(13,10), time(17,30)),
             (time(17,40), time(21,30))
         ]
 
@@ -171,7 +171,22 @@ class Servicio:
     
     def verRegistros(self):
         res = self.repositorio.verRegistros()
-        return res
+        ls = []
+        for registro in res:
+            id_user = registro.usuario_id
+            usuario = self.usuarios.buscarUsuario(id_user)
+            nombre = usuario.nombre
+            apellido = usuario.apellido
+            elemento = self.repositorio.buscarElemento(registro.element_id)
+            nelemento = elemento.nombre
+            reg = registro.model_dump()
+            reg["nombre"]=nombre
+            reg["apellido"]=apellido
+            reg["elemento_nombre"]=nelemento
+
+            ls.append(reg)
+
+        return ls
     
     
     

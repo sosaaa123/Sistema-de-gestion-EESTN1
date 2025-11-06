@@ -4,7 +4,7 @@ from Repositorio.userRepo import UserRepo
 from Repositorio.biblioRepo import BiblioRepo
 from Repositorio.repositorio import Repositorio
 from Modelos.users import User, Alumno, Profesor, Personal
-from Modelos.registro import RegistroBase
+from Modelos.registro import Registro, RegistroBase
 from Modelos.element import StockItem, UniqueItem
 from Modelos.biblioteca import Libro
 from Controller.biblioController import BiblioController
@@ -51,10 +51,10 @@ rep_usuarios = UserRepo("usuarios", conexion)
 pm = PasswordManager()
 tm = TokenManager(algoritmo, secret_key)
 
-
 serviceUser = Userservice(conexion, rep_usuarios, pm, tm)
-
-
+"""usuario = User(nombre="tom", apellido="sanch")
+print(serviceUser.crearUsuario(usuario))
+rep_usuarios.crearUsuario(usuario)"""
 #15
 #password: panconqueso12
 #email: lautasosita0999@gmail.com
@@ -63,8 +63,13 @@ serviceUser = Userservice(conexion, rep_usuarios, pm, tm)
 biblio_rep = BiblioRepo("biblioteca", conexion)
 
 servicioPrg = Servicio(repositorioPrg, rep_usuarios)
-
 biblioteca_servicio = BiblioService(biblio_rep, rep_usuarios)
+ahora = datetime.now()
+
+
+"""r = RegistroBase(element_id=4, cantidad=1, destino="7mo 3ra")
+usuario = User(id_usuario=9, nombre="Marcos", apellido="Rodriguez")
+print(servicioPrg.prestar( usuario, r))"""
 
 zonas = ["programacion", "biblioteca", "electromecanica", "laboratorio"]
 
@@ -86,10 +91,10 @@ app.add_middleware(
     allow_headers = ["*"],
 )
 
-controllerPrg = BiblioController(servicioPrg, "/programacion")
+controllerPrg = Controller(servicioPrg, "/programacion")
 controllerPrg.rutas(app)
 
-controllerBiblio = Controller(biblioteca_servicio, "/biblioteca")
+controllerBiblio = BiblioController(biblioteca_servicio, "/biblioteca")
 controllerBiblio.rutas(app)
 
 controllerUsers = userController(serviceUser, "/usuarios")

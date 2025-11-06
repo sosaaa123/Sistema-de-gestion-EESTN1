@@ -73,61 +73,61 @@ class Repositorio:
         #Necesito una funcion q me retorne el elemento q se esta solicitando
         #Tengo q hacer un Left Join
         #Hago un select de todas las tablas q me interesan(inventario, stockItem, uniqueItem (i,l,s,u))
+        with self.conexion as cur:
+            try:
+                cur.execute(f"""
+                SELECT i.*, s.*, u.*
+                FROM {self.esquema}.inventario i
+                LEFT JOIN {self.esquema}.stockitems s on s.inventario_id = i.element_id
+                LEFT JOIN {self.esquema}.uniqueitems u on u.inventario_id = i.element_id
+                WHERE i.element_id = (%s);
+                """, (element_id,))
 
-        try:
-            self.cur.execute(f"""
-            SELECT i.*, s.*, u.*
-            FROM {self.esquema}.inventario i
-            LEFT JOIN {self.esquema}.stockitems s on s.inventario_id = i.element_id
-            LEFT JOIN {self.esquema}.uniqueitems u on u.inventario_id = i.element_id
-            WHERE i.element_id = (%s);
-            """, (element_id,))
+                res = cur.fetchone()
 
-            res = self.cur.fetchone()
-
-            
-            nombre = res[1]
-            descripcion = res[2]
-            estado = res[3]
-            ubicacion = res[4]
-            ubicacion_interna = res[5]
-            tipo = res[6]
-
-            
-            if(tipo =="Uniqueitem" or tipo == "UniqueItem"):
-                nUniqueitem= UniqueItem(
-                id_element=element_id,
-                nombre=nombre,
-                descripcion=descripcion,
-                estado=estado,
-                ubicacion=ubicacion,
-                ubicacion_interna=ubicacion_interna,
-                tipo=tipo,
-                codigo_interno=res[11],
-
-                )
-               
-                return nUniqueitem
-            
-            elif(tipo=="Stockitem" or tipo =="StockItem"):
-                nStockitem = StockItem(
-                id_element=element_id,
-                nombre=nombre,
-                descripcion=descripcion,
-                estado=estado,
-                ubicacion=ubicacion,
-                ubicacion_interna=ubicacion_interna,
-                tipo=tipo,
-                cantidad=res[8],
-                disponibles=res[9],
-                isReusable= res[10]
-                )
                 
-                return nStockitem
-            
-        except Exception as e:
-                self.conexion.rollback()
-                raise e
+                nombre = res[1]
+                descripcion = res[2]
+                estado = res[3]
+                ubicacion = res[4]
+                ubicacion_interna = res[5]
+                tipo = res[6]
+
+                
+                if(tipo =="Uniqueitem" or tipo == "UniqueItem"):
+                    nUniqueitem= UniqueItem(
+                    id_element=element_id,
+                    nombre=nombre,
+                    descripcion=descripcion,
+                    estado=estado,
+                    ubicacion=ubicacion,
+                    ubicacion_interna=ubicacion_interna,
+                    tipo=tipo,
+                    codigo_interno=res[11],
+
+                    )
+                
+                    return nUniqueitem
+                
+                elif(tipo=="Stockitem" or tipo =="StockItem"):
+                    nStockitem = StockItem(
+                    id_element=element_id,
+                    nombre=nombre,
+                    descripcion=descripcion,
+                    estado=estado,
+                    ubicacion=ubicacion,
+                    ubicacion_interna=ubicacion_interna,
+                    tipo=tipo,
+                    cantidad=res[8],
+                    disponibles=res[9],
+                    isReusable= res[10]
+                    )
+                    
+                    return nStockitem
+                
+            except Exception as e:
+                    self.conexion.rollback()
+                    raise e
         
     #Para borrar registros, elementos, etc (lo manejo bien en service)
     def borrar(self, id):
@@ -267,56 +267,62 @@ class Repositorio:
     #   Esto es me trae todo lo del invnteraio(sin las relaciones de demas lados)
     #   Ver que hacer aca en para luego implementarlo en biblioteca(ver caso con libros)
     def verInventarioAll(self):
-        self.cur.execute(f"""
-        SELECT element_id, nombre, descripcion, estado, ubicacion, ubicacion_interna, tipo FROM {self.esquema}.inventario;""")
+        cur = self.conexion.cur()
+        try:
+            cur.execute(f"""
+            SELECT element_id, nombre, descripcion, estado, ubicacion, ubicacion_interna, tipo FROM {self.esquema}.inventario;""")
 
-        res = self.cur.fetchall()
-        inventario = []
-        
-        for i in res:
-            if(i[6] == "Uniqueitem"):
-                self.cur.execute(f"""
-                SELECT codigo_interno
-                FROM {self.esquema}.uniqueitems
-                WHERE inventario_id = (%s);                      
-                """,(i[0],))
+            res = cur.fetchall()
+            inventario = []
+            
+            for i in res:
+                n = None
+                if(i[6] == "UniqueItem" or i[6] == "Uniqueitem"):
+                    cur.execute(f"""
+                    SELECT codigo_interno
+                    FROM {self.esquema}.uniqueitems
+                    WHERE inventario_id = (%s);                      
+                    """,(i[0],))
+                    r = cur.fetchone()
+                    n = UniqueItem(id_element=i[0],
+                                nombre=i[1],
+                                descripcion=i[2],
+                                estado=i[3],
+                                ubicacion=i[4],
+                                ubicacion_interna=i[5],
+                                tipo=i[6],
+                                codigo_interno=r[0])
+                elif(i[6] == "Stockitem" or i[6] == "StockItem"):
+                    cur.execute(f"""
+                    SELECT cantidad, disponibles, isreusable
+                    FROM {self.esquema}.stockitems
+                    WHERE inventario_id = (%s);                      
+                    """, (i[0],))
 
-                r = self.cur.fetchone()
-                n = UniqueItem(id_element=i[0],
-                               nombre=i[1],
-                               descripcion=i[2],
-                               estado=i[3],
-                               ubicacion=i[4],
-                               ubicacion_interna=i[5],
-                               tipo=i[6],
-                               codigo_interno=r[0])
-            elif(i[6] == "Stockitem"):
-                self.cur.execute(f"""
-                SELECT cantidad, disponibles, isreusable
-                FROM {self.esquema}.stockitems;                      
-                """)
+                    r = cur.fetchone()
+                    n = StockItem(id_element=i[0],
+                                nombre=i[1],
+                                descripcion=i[2],
+                                estado=i[3],
+                                ubicacion=i[4],
+                                ubicacion_interna=i[5],
+                                tipo=i[6],
+                                cantidad=r[0],
+                                disponibles=r[1],
+                                isReusable=r[2])
 
-                r = self.cur.fetchone()
-                n = StockItem( id_element=i[0],
-                               nombre=i[1],
-                               descripcion=i[2],
-                               estado=i[3],
-                               ubicacion=i[4],
-                               ubicacion_interna=i[5],
-                               tipo=i[6],
-                               cantidad=r[0],
-                               disponibles=r[1],
-                               isReusable=r[2])
-
-            inventario.append(n)
-        return inventario
+                inventario.append(n)
+            return inventario
+        except Exception as e:
+            raise e
 
     
 
         
     def crearRegistro(self, registro: Registro):
+        cur = self.conexion.cur()
         try:
-            self.cur.execute(f"""
+            cur.execute(f"""
             INSERT INTO {self.esquema}.registros(usuario_id, element_id, cantidad, fecha, hora, expiracion, estado, destino)
             VALUES (%s,%s,%s,%s,%s,%s,%s, %s);""", (
                 registro.usuario_id,
@@ -338,29 +344,31 @@ class Repositorio:
 
 
     def verRegistros(self):
-        self.cur.execute(f"""
-        SELECT registro_id, usuario_id, element_id, cantidad, fecha, hora, expiracion, estado, destino 
-        FROM {self.esquema}.registros""")
-
-        res = self.cur.fetchall()
-        registros = []
-
-        for i in res:
-            n = Registro(
-                registro_id=i[0],
-                usuario_id=i[1],
-                element_id=i[2],
-                cantidad=i[3],
-                fecha=i[4],
-                hora=i[5],
-                expiracion=i[6],
-                estado=i[7],
-                destino=i[8]
-            )
-
-            
-            registros.append(n)
-        return registros
+        with self.conexion.cur() as cur:
+            try:
+                cur.execute(f"""
+                SELECT registro_id, usuario_id, element_id, cantidad, fecha, hora, expiracion, estado, destino 
+                FROM {self.esquema}.registros""")
+                res = cur.fetchall() 
+                registros = []
+                for i in res:
+                    n = Registro(
+                        registro_id=i[0],
+                        usuario_id=i[1],
+                        element_id=i[2],
+                        cantidad=i[3],
+                        fecha=i[4],
+                        hora=i[5],
+                        expiracion=i[6],
+                        estado=i[7],
+                        destino=i[8]
+                    )
+                    registros.append(n)
+                
+                return registros
+            except Exception as e:
+                raise e
+        
     
 
         #Metodo para manejar la devolucion de prestamos
@@ -374,7 +382,6 @@ class Repositorio:
             """, ("Terminado", registro_id))
 
             self.conexion.commit()
-            self.conexion.close()
         except Exception as e:
             self.conexion.rollback()
             raise e

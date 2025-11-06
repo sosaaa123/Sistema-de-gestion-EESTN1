@@ -1,6 +1,6 @@
-from typing import Union
+from typing import List, Union
 from fastapi import FastAPI, HTTPException
-from Modelos.registro import RegistroBase
+from Modelos.registro import Registro, RegistroBase
 from Modelos.users import User
 from Servicio.servicio import Servicio
 from Modelos.element import Element, UniqueItem, StockItem
@@ -80,15 +80,18 @@ class Controller:
                 res = self.servicio.devolver(registro_id)
                 return res
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Error al prestar elemento: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Error al devolver el elemento: {str(e)}")
         
+        from typing import List
+
         @app.get(f"{self.prefix}/registros")
         def verRegistros():
             try:
-                res = self.servicio.verRegistros()
-                return res
+                
+                return self.servicio.verRegistros()
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al cargar registros: {str(e)}")
+
         
             
 

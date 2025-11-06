@@ -9,72 +9,83 @@ class UserRepo:
         self.cur = self.conexion.cur()
 
 
-    #Revisar este metodo y que devuevla un array de usuarios pero cada uno con su respectiva clase
     def verAlumnos(self):
-        self.cur.execute(f"""
-                         SELECT u.id, u.nombre, u.apellido, a.curso, a.especialidad
-                         FROM {self.esquema}.usuarios u
-                         INNER JOIN {self.esquema}.alumnos a ON u.id = a.user_id
-                         """)
-        
-        res = self.cur.fetchall()
-        alumnos = []
-        for r in res:
-            alumno=Alumno(id_usuario=r[0], 
-                          nombre=r[1], 
-                          apellido=r[2], 
-                          curso=r[3], 
-                          especialidad=r[4])
-            alumnos.append(alumno)
-
-        return alumnos
+        try:
+            with self.conexion.cur() as cur: 
+                cur.execute(f"""
+                                SELECT u.id, u.nombre, u.apellido, a.curso, a.especialidad
+                                FROM {self.esquema}.usuarios u
+                                INNER JOIN {self.esquema}.alumnos a ON u.id = a.user_id
+                                """)
+                
+                res = cur.fetchall()
+                alumnos = []
+                for r in res:
+                    alumno=Alumno(id_usuario=r[0], 
+                                nombre=r[1], 
+                                apellido=r[2], 
+                                curso=r[3], 
+                                especialidad=r[4])
+                    alumnos.append(alumno)
+                return alumnos
+        except Exception as e:
+            
+            raise e
     
-    def buscarRelacionArea(self, ids_areas: List[str]):
+    def buscarRelacionArea(self, ids_areas: List[str], cur):
         areas = []
         for id in ids_areas:
-            self.cur.execute(f"""
+            cur.execute(f"""
             SELECT area FROM {self.esquema}.areas
             WHERE area_id = (%s)
             """, (id,))
 
-            res = self.cur.fetchone()
-            areas.append(res[0])
+            res = cur.fetchone()
+            if res:
+                areas.append(res[0])
         return areas
 
     
     def verPersonal(self):
-        self.cur.execute(f"""
-        SELECT u.id, u.nombre, u.apellido, p.rol, p.email
-        FROM {self.esquema}.usuarios u
-        INNER JOIN {self.esquema}.personal p ON u.id = p.user_id
-        """)
+        try:
+            with self.conexion.cur() as cur: 
+                cur.execute(f"""
+                SELECT u.id, u.nombre, u.apellido, p.rol, p.email
+                FROM {self.esquema}.usuarios u
+                INNER JOIN {self.esquema}.personal p ON u.id = p.user_id
+                """)
 
-        res = self.cur.fetchall()
-        personal = []
-        for r in res:
-            self.cur.execute(f"""
-            SELECT area_id FROM {self.esquema}.usuario_area_relacion
-            WHERE user_id= (%s)""",(r[0],))
-            
-            resp = self.cur.fetchall()
-            ids_areas = []
-            for id in resp:
-                ids_areas.append(id[0])
-            
-            areas = self.buscarRelacionArea(ids_areas)
+                res = cur.fetchall()
+                personal = []
+                for r in res:
+                    cur.execute(f"""
+                    SELECT area_id FROM {self.esquema}.usuario_area_relacion
+                    WHERE user_id= (%s)""",(r[0],))
+                    
+                    resp = cur.fetchall()
+                    ids_areas = []
+                    for id in resp:
+                        ids_areas.append(id[0])
+                    
+                    
+                    areas = self.buscarRelacionArea(ids_areas, cur)
 
-            npersonal= Personal(
-                id_usuario=r[0],
-                nombre=r[1],
-                apellido=r[2],
-                rol=r[3],
-                email=r[4],
-                zonas_acceso=areas
-            )
+                    npersonal= Personal(
+                        id_usuario=r[0],
+                        nombre=r[1],
+                        apellido=r[2],
+                        rol=r[3],
+                        email=r[4],
+                        zonas_acceso=areas
+                    )
 
-            personal.append(npersonal)
-
-        return personal
+                    personal.append(npersonal)
+                
+                self.conexion.commit() 
+                return personal
+        except Exception as e:
+            self.conexion.rollback()
+            raise e
 
     #Nota: aca lo iideal tambien seria devolver los cursos del profesor, para eso se debe cambiar el modelo de profesore
     #agregarles el atributo cursos como lista y demas. Ahora por paja y por tiempo lo dejo solo asi        
@@ -348,16 +359,17 @@ class UserRepo:
             return False
 
     def buscarUsuario(self, id_user):
-        try:
-            self.cur.execute(f"""
-            SELECT id, nombre, apellido from {self.esquema}.usuarios
-            WHERE id = (%s)
-            """, (id_user,))
+        with self.conexion.cur() as cur:
+            try:
+                cur.execute(f"""
+                SELECT id, nombre, apellido from {self.esquema}.usuarios
+                WHERE id = (%s)
+                """, (id_user,))
 
-            res = self.cur.fetchone()
+                res = cur.fetchone()
 
-            usuario = User(id_usuario=res[0], nombre=res[1], apellido=res[2])
-            return usuario
-        except Exception as e:
-            raise e
+                usuario = User(id_usuario=res[0], nombre=res[1], apellido=res[2])
+                return usuario
+            except Exception as e:
+                raise e
 
