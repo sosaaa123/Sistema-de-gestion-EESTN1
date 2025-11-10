@@ -4,6 +4,7 @@ from controller_imports import *
 from Conexiones.conexion import Conexion
 from fastapi import FastAPI
 import os
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from Servicio.pwdManager import PasswordManager
 from Servicio.tokenManager import TokenManager
@@ -18,6 +19,13 @@ pm = PasswordManager()
 tm = TokenManager(algoritmo,secret_key)
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = ["http://localhost:5173"],
+    allow_methods = ["*"],
+    allow_credentials = True, 
+    allow_headers = ["*"],
+)
 #----------USUARIOS-------------
 repositorio_usuarios = UserRepo("usuarios",conexion)
 service_usuarios = Userservice(conexion,repositorio_usuarios, pm, tm)
