@@ -1,2 +1,8 @@
 .env
 env/
+# Ignorar archivos compilados
+__pycache__/
+*.pyc
+
+# Ignorar entornos virtuales
+

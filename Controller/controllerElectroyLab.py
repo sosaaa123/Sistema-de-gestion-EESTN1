@@ -17,7 +17,7 @@ class controller():
         self.prefix = prefix
     def rutas(self, app: FastAPI):
         prefix = self.prefix
-        @app.get(f'{prefix}/invenario')
+        @app.get(f'{prefix}/inventario')
         def verElementos():
             try:
                 elementos = self.service.ver_elementos()
