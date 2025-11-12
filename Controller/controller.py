@@ -51,7 +51,7 @@ class Controller:
                 if res["success"]:
                     return res
                 else:
-                    raise HTTPException(status_code=404, detail=f"{res["message"]}")
+                    raise HTTPException(status_code=404, detail=res["message"])
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al cargar elemento: {str(e)}")
             
@@ -62,7 +62,7 @@ class Controller:
                 if res["message"]:
                     return res
                 else:
-                    raise HTTPException(status_code=404, detail=f"{res["message"]}")
+                    raise HTTPException(status_code=404, detail=res["message"])
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Error al eliminar elemento: {str(e)}")
 
